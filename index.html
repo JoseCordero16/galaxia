@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05030f">
+<title>Una galaxia para ti 🌼</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Quicksand:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --noche: #05030f;
+    --violeta: #1b1236;
+    --oro: #ffd24a;
+    --crema: #fff6cf;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background: radial-gradient(ellipse at 50% 42%, var(--violeta) 0%, #0c0820 46%, var(--noche) 100%);
+    color: var(--crema);
+    font-family: 'Quicksand', system-ui, sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: grab;
+  }
+  canvas:active { cursor: grabbing; }
+
+  /* Texto sobre la galaxia */
+  #titulo {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    left: 0; right: 0;
+    text-align: center;
+    pointer-events: none;
+    font-family: 'Dancing Script', cursive;
+    font-weight: 700;
+    font-size: clamp(30px, 7vw, 48px);
+    text-shadow: 0 0 22px rgba(255, 205, 60, .75);
+    opacity: 0;
+    transition: opacity 2.4s ease 1.6s;
+  }
+
+  #frase {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+    padding: 0 28px;
+    text-align: center;
+    pointer-events: none;
+    font-family: 'Dancing Script', cursive;
+    font-weight: 500;
+    font-size: clamp(26px, 6.8vw, 42px);
+    line-height: 1.2;
+    text-shadow: 0 0 20px rgba(255, 200, 50, .8), 0 2px 12px rgba(0, 0, 0, .7);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 1.1s ease, transform 1.1s ease;
+  }
+  #frase.visible { opacity: 1; transform: none; }
+
+  #pista, #firma {
+    position: fixed;
+    left: 0; right: 0;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 2s ease 3s;
+  }
+  #pista {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 34px);
+    font-size: 13px;
+    letter-spacing: .05em;
+  }
+  #firma {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    font-family: 'Dancing Script', cursive;
+    font-size: 18px;
+    color: var(--oro);
+  }
+  body.abierto #titulo { opacity: 1; }
+  body.abierto #pista { opacity: .6; }
+  body.abierto #firma { opacity: .85; }
+
+  /* Frases que aparecen al tocar */
+  .pop {
+    position: fixed;
+    z-index: 5;
+    pointer-events: none;
+    white-space: nowrap;
+    font-family: 'Dancing Script', cursive;
+    font-weight: 700;
+    font-size: clamp(24px, 6vw, 34px);
+    color: #fff3b8;
+    text-shadow: 0 0 16px rgba(255, 200, 40, .95), 0 0 4px rgba(0, 0, 0, .6);
+    animation: sube 3.4s ease-out forwards;
+  }
+  @keyframes sube {
+    0%   { opacity: 0; transform: translate(-50%, -20%) scale(.6); }
+    15%  { opacity: 1; transform: translate(-50%, -60%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -220%) scale(1.06); }
+  }
+
+  /* Pantalla de inicio */
+  #intro {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 28px;
+    text-align: center;
+    background: radial-gradient(circle at 50% 38%, #221443 0%, var(--noche) 72%);
+    transition: opacity 1.8s ease, visibility 1.8s;
+  }
+  #intro.oculto { opacity: 0; visibility: hidden; pointer-events: none; }
+  #intro .icono {
+    font-size: 68px;
+    line-height: 1;
+    filter: drop-shadow(0 0 18px rgba(255, 200, 40, .8));
+    animation: flota 3.2s ease-in-out infinite;
+  }
+  #intro h1 {
+    margin: 6px 0 0;
+    font-family: 'Dancing Script', cursive;
+    font-weight: 700;
+    font-size: clamp(38px, 10vw, 64px);
+    line-height: 1.1;
+    text-shadow: 0 0 24px rgba(255, 205, 60, .6);
+  }
+  #intro p { margin: 0; max-width: 28ch; opacity: .78; line-height: 1.5; }
+  #intro button {
+    margin-top: 12px;
+    padding: 14px 34px;
+    font: 500 17px 'Quicksand', system-ui, sans-serif;
+    color: #2a1600;
+    background: linear-gradient(180deg, #ffe27a, #ffb800);
+    border: 0;
+    border-radius: 999px;
+    box-shadow: 0 0 28px rgba(255, 190, 30, .55);
+    cursor: pointer;
+  }
+  #intro button:focus-visible, #btn-musica:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
+  }
+  @keyframes flota {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-9px); }
+  }
+
+  #btn-musica {
+    position: fixed;
+    z-index: 6;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    right: 14px;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 214, 90, .5);
+    background: rgba(20, 12, 40, .55);
+    color: #ffe27a;
+    font-size: 18px;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  #btn-musica.apagada { opacity: .5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #intro .icono { animation: none; }
+    .pop { animation-duration: 5s; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="lienzo"></canvas>
+
+<div id="titulo"></div>
+<div id="frase" aria-live="polite"></div>
+<div id="pista">Arrastra para girar · Pellizca para acercar · Toca para dejar una flor</div>
+<div id="firma"></div>
+
+<button id="btn-musica" hidden aria-label="Música">🎵</button>
+
+<div id="intro">
+  <div class="icono">🌼</div>
+  <h1 id="intro-titulo"></h1>
+  <p>Una galaxia entera de flores, hecha con cariño.</p>
+  <button id="btn-abrir" type="button">Abrir</button>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ===========================================================
+     ✏️  PERSONALIZA AQUÍ
+     =========================================================== */
+  const CONFIG = {
+    titulo: 'Para ti',            // texto grande de arriba
+    nombre: 'Laura',              // nombre que aparece en el centro de la galaxia
+    firma: 'Fer',                    // ej: '— Tu nombre'  (déjalo vacío si no quieres firma)
+    musica: 'musica.mp3',         // opcional: sube un archivo con este nombre junto a index.html
+    frases: [
+      'Te amo',
+      'Eras la más linda del universo',
+      'Eres mi flor favorita',
+      'Contigo todo brilla más',
+      'Eres mi estrella favorita',
+      'Eres mi lugar favorito en el mundo',
+      'Tu sonrisa ilumina mi galaxia',
+      'Te elegiría en todas las galaxias',
+      'Gracias por existir',
+      'Eres mi universo entero',
+      'Eres luz, eres primavera',
+      'Te quiero más que a todas las estrellas',
+      'Eres lo más bonito que me pasó',
+      'Ninguna flor se compara contigo',
+      'Me haces feliz sin intentarlo',
+      'Laura, mi flor amarilla favorita',
+      'Eres mi razón para sonreír',
+      'Contigo el universo es más bonito',
+      'Cada estrella me recuerda a ti',
+      'Eres mi pensamiento favorito',
+      'Eres mi casualidad más bonita',
+      'Eres el sol de mi día',
+      'Nadie brilla como tú',
+      'Eres mi sueño hecho realidad',
+      'Todo lo bonito me recuerda a ti',
+      'Mi lugar favorito es a tu lado',
+      'Tu risa es mi canción favorita',
+      'Aunque pasen mil galaxias, te sigo eligiendo',
+      'Eres más bonita que mil flores',
+      'Contigo, cada día es primavera',
+      'Gracias por hacer mi mundo más bonito',
+      'Eres mi girasol',
+      'Mi universo tiene tu nombre',
+      'Brillas más que todas las estrellas',
+      'Te amo, Laura'
+    ]
+  };
+
+  /* ===========================================================
+     Preparación
+     =========================================================== */
+  const $ = id => document.getElementById(id);
+  const canvas = $('lienzo');
+  const ctx = canvas.getContext('2d');
+  const reducirMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const esMovil = Math.min(window.innerWidth, window.innerHeight) < 600;
+
+  $('titulo').textContent = CONFIG.titulo + ' 🌼';
+  $('intro-titulo').textContent = CONFIG.titulo;
+  $('firma').textContent = CONFIG.firma;
+  document.title = CONFIG.titulo + ' 🌼';
+
+  if (document.fonts && document.fonts.load) {
+    document.fonts.load("700 20px 'Dancing Script'");
+  }
+
+  let W = 0, H = 0, dpr = 1;
+  function ajustarLienzo() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  ajustarLienzo();
+  window.addEventListener('resize', ajustarLienzo);
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5; // ~ -1..1
+
+  /* ===========================================================
+     Flores: se dibujan una sola vez en mini-lienzos (sprites)
+     =========================================================== */
+  const PALETAS = [
+    { base: '#f5b000', punta: '#ffe45c', c1: '#9a5209', c2: '#5c2f04', brillo: 'rgba(255,200,40,.95)' },
+    { base: '#ffc933', punta: '#fff2a8', c1: '#b8620a', c2: '#7a3d06', brillo: 'rgba(255,215,80,.95)' },
+    { base: '#ff9f1a', punta: '#ffd24a', c1: '#7a3a05', c2: '#4a2203', brillo: 'rgba(255,170,40,.9)' },
+    { base: '#ffe066', punta: '#fffbe0', c1: '#c47a10', c2: '#8a4e08', brillo: 'rgba(255,240,150,.95)' }
+  ];
+
+  function crearSprite(paleta, petalos, rotacion) {
+    const S = 128;
+    const c = document.createElement('canvas');
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    g.translate(S / 2, S / 2);
+    const R = S * 0.36;
+
+    g.shadowColor = paleta.brillo;
+    g.shadowBlur = 10;
+    for (let i = 0; i < petalos; i++) {
+      g.save();
+      g.rotate(rotacion + (i * 2 * Math.PI) / petalos);
+      const grad = g.createLinearGradient(0, 0, 0, -R);
+      grad.addColorStop(0, paleta.base);
+      grad.addColorStop(1, paleta.punta);
+      g.fillStyle = grad;
+      g.beginPath();
+      g.ellipse(0, -R * 0.55, R * 0.26, R * 0.5, 0, 0, Math.PI * 2);
+      g.fill();
+      g.restore();
+    }
+    g.shadowBlur = 0;
+    const cg = g.createRadialGradient(0, 0, 0, 0, 0, R * 0.3);
+    cg.addColorStop(0, paleta.c1);
+    cg.addColorStop(1, paleta.c2);
+    g.fillStyle = cg;
+    g.beginPath();
+    g.arc(0, 0, R * 0.26, 0, Math.PI * 2);
+    g.fill();
+    return c;
+  }
+
+  const sprites = [];
+  PALETAS.forEach(p => {
+    [6, 8].forEach(n => {
+      [0, 0.4].forEach(rot => sprites.push(crearSprite(p, n, rot)));
+    });
+  });
+
+  /* ===========================================================
+     La galaxia
+     =========================================================== */
+  const BRAZOS = 4;
+  const GIRO_ESPIRAL = 4.2;
+  const N_FLORES = esMovil ? 650 : 1100;
+  const N_POLVO = esMovil ? 600 : 1100;
+  const N_FRASES = esMovil ? 10 : 16;
+
+  const flores = [];
+  for (let i = 0; i < N_FLORES; i++) {
+    const r = Math.pow(Math.random(), 0.78) * 0.98 + 0.03;
+    const brazo = (i % BRAZOS) * (2 * Math.PI / BRAZOS);
+    const ang = brazo + r * GIRO_ESPIRAL + gauss() * 0.55 * (1.1 - r);
+    flores.push({
+      x: Math.cos(ang) * r,
+      z: Math.sin(ang) * r,
+      y: gauss() * 0.07 * (1.1 - r),
+      tam: (30 + Math.random() * 26) - r * 12,
+      sprite: sprites[(Math.random() * sprites.length) | 0],
+      fase: Math.random() * 6.28,
+      vel: rnd(0.6, 1.8),
+      // valores calculados en cada cuadro
+      sx: 0, sy: 0, d: 0, p: 1
+    });
+  }
+
+  const polvo = [];
+  for (let i = 0; i < N_POLVO; i++) {
+    const r = Math.pow(Math.random(), 0.9) * 1.05;
+    const brazo = (i % BRAZOS) * (2 * Math.PI / BRAZOS);
+    const ang = brazo + r * GIRO_ESPIRAL + gauss() * 0.9 * (1.1 - r * 0.5);
+    polvo.push({
+      x: Math.cos(ang) * r,
+      z: Math.sin(ang) * r,
+      y: gauss() * 0.1,
+      t: rnd(0.7, 1.9),
+      a: rnd(0.25, 0.8)
+    });
+  }
+
+  // Frases flotando dentro de la galaxia
+  const mezcladas = CONFIG.frases.slice().sort(() => Math.random() - 0.5);
+  const frasesFlotantes = [];
+  for (let i = 0; i < Math.min(N_FRASES, mezcladas.length); i++) {
+    const r = rnd(0.28, 0.9);
+    const ang = (i / N_FRASES) * Math.PI * 2 + rnd(-0.3, 0.3);
+    frasesFlotantes.push({
+      texto: mezcladas[i],
+      x: Math.cos(ang) * r,
+      z: Math.sin(ang) * r,
+      y: -0.09,
+      sx: 0, sy: 0, d: 0, p: 1
+    });
+  }
+
+  // Estrellas de fondo
+  const estrellas = [];
+  for (let i = 0; i < (esMovil ? 140 : 260); i++) {
+    estrellas.push({
+      x: Math.random(), y: Math.random(),
+      r: rnd(0.4, 1.5), fase: Math.random() * 6.28, vel: rnd(0.5, 2)
+    });
+  }
+
+  /* ===========================================================
+     Estado y controles
+     =========================================================== */
+  let rotY = 0;
+  let inclinacion = 0.95;
+  let inercia = 0;
+  const VEL_AUTO = reducirMovimiento ? 0.02 : 0.09;
+
+  let zoomBase = 0.05, zoomBaseObjetivo = 0.05; // animación de entrada
+  let zoomUsuario = 1, zoomUsuarioObjetivo = 1; // pellizco / rueda
+  let abierto = false;
+
+  const punteros = new Map();
+  let movido = 0;
+  let distPinch = 0;
+
+  const distanciaPinch = () => {
+    const [a, b] = [...punteros.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  canvas.addEventListener('pointerdown', e => {
+    if (!abierto) return;
+    canvas.setPointerCapture(e.pointerId);
+    punteros.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    movido = 0;
+    inercia = 0;
+    if (punteros.size === 2) distPinch = distanciaPinch();
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    const p = punteros.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x;
+    const dy = e.clientY - p.y;
+    p.x = e.clientX;
+    p.y = e.clientY;
+
+    if (punteros.size === 1) {
+      rotY += dx * 0.006;
+      inclinacion = clamp(inclinacion - dy * 0.004, 0.2, 1.45);
+      inercia = clamp(dx * 0.006 * 50, -3, 3);
+      movido += Math.abs(dx) + Math.abs(dy);
+    } else if (punteros.size === 2) {
+      const d = distanciaPinch();
+      if (distPinch > 0) {
+        zoomUsuarioObjetivo = clamp(zoomUsuarioObjetivo * (d / distPinch), 0.6, 2.8);
+      }
+      distPinch = d;
+      movido += 99;
+    }
+  });
+
+  function soltar(e) {
+    if (!punteros.has(e.pointerId)) return;
+    const eraUnico = punteros.size === 1;
+    punteros.delete(e.pointerId);
+    if (eraUnico && movido < 8 && e.type === 'pointerup') tocar(e.clientX, e.clientY);
+  }
+  canvas.addEventListener('pointerup', soltar);
+  canvas.addEventListener('pointercancel', soltar);
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomUsuarioObjetivo = clamp(zoomUsuarioObjetivo * (e.deltaY < 0 ? 1.08 : 0.92), 0.6, 2.8);
+  }, { passive: false });
+
+  // Evita el zoom de página en Safari (iPhone)
+  document.addEventListener('gesturestart', e => e.preventDefault());
+
+  /* ===========================================================
+     Tocar: lluvia de flores + frase
+     =========================================================== */
+  const particulas = [];
+
+  function tocar(x, y) {
+    for (let i = 0; i < 14; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const v = rnd(50, 210);
+      particulas.push({
+        x, y,
+        vx: Math.cos(ang) * v,
+        vy: Math.sin(ang) * v - 30,
+        rot: Math.random() * 6.28,
+        vr: rnd(-2.5, 2.5),
+        s: rnd(16, 34),
+        vida: rnd(1.2, 2.2),
+        vidaMax: 2.2,
+        sprite: sprites[(Math.random() * sprites.length) | 0]
+      });
+    }
+    inercia += (Math.random() < 0.5 ? -1 : 1) * 0.8;
+
+    const el = document.createElement('div');
+    el.className = 'pop';
+    el.textContent = CONFIG.frases[(Math.random() * CONFIG.frases.length) | 0];
+    el.style.left = clamp(x, 110, W - 110) + 'px';
+    el.style.top = y + 'px';
+    el.addEventListener('animationend', () => el.remove());
+    document.body.appendChild(el);
+  }
+
+  /* ===========================================================
+     Estrellas fugaces
+     =========================================================== */
+  const fugaces = [];
+  let proxFugaz = 3;
+
+  /* ===========================================================
+     Dibujo
+     =========================================================== */
+  function proyectar(o, cosY, sinY, cosT, sinT, cx, cy, unidad, zoom) {
+    const x1 = o.x * cosY + o.z * sinY;
+    const z1 = -o.x * sinY + o.z * cosY;
+    const y2 = o.y * cosT + z1 * sinT;
+    o.d = o.y * sinT - z1 * cosT; // menor = más cerca
+    o.p = 2.6 / (2.6 + o.d);
+    o.sx = cx + x1 * unidad * o.p * zoom;
+    o.sy = cy + y2 * unidad * o.p * zoom;
+  }
+
+  let ultimo = performance.now();
+
+  function cuadro(ahora) {
+    const dt = Math.min(0.05, (ahora - ultimo) / 1000);
+    ultimo = ahora;
+    const t = ahora / 1000;
+
+    // Animaciones suaves de zoom
+    zoomBase += (zoomBaseObjetivo - zoomBase) * (1 - Math.exp(-2.2 * dt));
+    zoomUsuario += (zoomUsuarioObjetivo - zoomUsuario) * (1 - Math.exp(-6 * dt));
+    const zoom = zoomBase * zoomUsuario;
+
+    // Rotación
+    if (punteros.size === 0) {
+      rotY += (VEL_AUTO + inercia) * dt;
+      inercia *= Math.exp(-2.2 * dt);
+    }
+
+    const cx = W / 2;
+    const cy = H * 0.47;
+    const unidad = Math.min(W, H) * 0.55;
+    const escala = (unidad / 380) * 1.15;
+    const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+    const cosT = Math.cos(inclinacion), sinT = Math.sin(inclinacion);
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Estrellas de fondo
+    ctx.fillStyle = '#fff';
+    for (const s of estrellas) {
+      ctx.globalAlpha = 0.25 + 0.6 * (0.5 + 0.5 * Math.sin(t * s.vel + s.fase));
+      ctx.fillRect(s.x * W, s.y * H, s.r, s.r);
+    }
+
+    // Estrellas fugaces
+    if (abierto && !reducirMovimiento) {
+      proxFugaz -= dt;
+      if (proxFugaz <= 0) {
+        proxFugaz = rnd(3, 8);
+        const ang = Math.PI * rnd(0.12, 0.28);
+        const v = rnd(500, 800);
+        fugaces.push({ x: rnd(0, W * 0.7), y: rnd(0, H * 0.35), vx: Math.cos(ang) * v, vy: Math.sin(ang) * v, vida: 0.9 });
+      }
+    }
+    for (let i = fugaces.length - 1; i >= 0; i--) {
+      const f = fugaces[i];
+      f.x += f.vx * dt; f.y += f.vy * dt; f.vida -= dt;
+      if (f.vida <= 0) { fugaces.splice(i, 1); continue; }
+      const a = f.vida / 0.9;
+      const g = ctx.createLinearGradient(f.x, f.y, f.x - f.vx * 0.13, f.y - f.vy * 0.13);
+      g.addColorStop(0, `rgba(255,244,200,${a})`);
+      g.addColorStop(1, 'rgba(255,244,200,0)');
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(f.x - f.vx * 0.13, f.y - f.vy * 0.13);
+      ctx.stroke();
+    }
+
+    // Resplandor del núcleo
+    const radioNucleo = unidad * 0.62 * zoom;
+    if (radioNucleo > 4) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 1;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radioNucleo);
+      g.addColorStop(0, 'rgba(255,214,90,.55)');
+      g.addColorStop(0.35, 'rgba(255,170,40,.2)');
+      g.addColorStop(1, 'rgba(255,150,30,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radioNucleo, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Polvo de estrellas
+    ctx.fillStyle = '#ffe9a8';
+    for (const d of polvo) {
+      proyectar(d, cosY, sinY, cosT, sinT, cx, cy, unidad, zoom);
+      const s = d.t * d.p * Math.max(escala, 0.8);
+      ctx.globalAlpha = d.a * clamp(1 - (d.d + 1) * 0.35, 0.2, 1);
+      ctx.fillRect(d.sx, d.sy, s, s);
+    }
+
+    // Flores (de lejos a cerca)
+    for (const f of flores) proyectar(f, cosY, sinY, cosT, sinT, cx, cy, unidad, zoom);
+    flores.sort((a, b) => b.d - a.d);
+    for (const f of flores) {
+      const s = f.tam * escala * f.p * zoom;
+      if (s < 2) continue;
+      const brillo = 0.86 + 0.14 * Math.sin(t * f.vel + f.fase);
+      ctx.globalAlpha = clamp(0.42 + 0.58 * (1 - (f.d + 1) / 2), 0.3, 1) * brillo;
+      ctx.drawImage(f.sprite, f.sx - s / 2, f.sy - s / 2, s, s);
+    }
+
+    // Frases flotantes
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const fr of frasesFlotantes) {
+      proyectar(fr, cosY, sinY, cosT, sinT, cx, cy, unidad, zoom);
+    }
+    frasesFlotantes.sort((a, b) => b.d - a.d);
+    for (const fr of frasesFlotantes) {
+      const tam = clamp(19 * (unidad / 380) + 6, 15, 26) * fr.p * Math.sqrt(zoom);
+      if (tam < 6) continue;
+      const a = clamp(0.95 - (fr.d + 1) * 0.42, 0.12, 0.95);
+      ctx.font = `700 ${tam.toFixed(1)}px 'Dancing Script', cursive`;
+      ctx.globalAlpha = a;
+      ctx.shadowColor = 'rgba(255,190,40,.95)';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#fff3b8';
+      ctx.fillText(fr.texto, fr.sx, fr.sy);
+      ctx.shadowBlur = 0;
+    }
+
+    // Nombre en el centro de la galaxia
+    if (CONFIG.nombre) {
+      const aparece = clamp((zoomBase - 0.35) / 0.65, 0, 1);
+      if (aparece > 0) {
+        const latido = 1 + 0.03 * Math.sin(t * 1.6);
+        const tamN = clamp(unidad * 0.2, 34, 82) * Math.pow(zoom, 0.6) * latido;
+        ctx.font = `700 ${tamN.toFixed(1)}px 'Dancing Script', cursive`;
+        ctx.globalAlpha = aparece;
+        ctx.shadowBlur = 0;
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = Math.max(4, tamN * 0.09);
+        ctx.strokeStyle = 'rgba(70,30,0,.6)';
+        ctx.strokeText(CONFIG.nombre, cx, cy);
+        ctx.fillStyle = '#fff8d6';
+        ctx.shadowColor = 'rgba(255,190,40,1)';
+        ctx.shadowBlur = 26;
+        ctx.fillText(CONFIG.nombre, cx, cy);
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    // Flores que salen al tocar
+    for (let i = particulas.length - 1; i >= 0; i--) {
+      const q = particulas[i];
+      q.vida -= dt;
+      if (q.vida <= 0) { particulas.splice(i, 1); continue; }
+      q.x += q.vx * dt;
+      q.y += q.vy * dt;
+      q.vy -= 18 * dt;
+      q.vx *= Math.exp(-0.8 * dt);
+      q.rot += q.vr * dt;
+      ctx.save();
+      ctx.globalAlpha = clamp(q.vida / q.vidaMax * 1.4, 0, 1);
+      ctx.translate(q.x, q.y);
+      ctx.rotate(q.rot);
+      ctx.drawImage(q.sprite, -q.s / 2, -q.s / 2, q.s, q.s);
+      ctx.restore();
+    }
+
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(cuadro);
+  }
+  requestAnimationFrame(cuadro);
+
+  /* ===========================================================
+     Frase central que va cambiando
+     =========================================================== */
+  const fraseEl = $('frase');
+  let idxFrase = 0;
+  function siguienteFrase() {
+    fraseEl.classList.remove('visible');
+    setTimeout(() => {
+      fraseEl.textContent = CONFIG.frases[idxFrase % CONFIG.frases.length];
+      idxFrase++;
+      fraseEl.classList.add('visible');
+    }, 1100);
+  }
+
+  /* ===========================================================
+     Música (opcional)
+     =========================================================== */
+  const btnMusica = $('btn-musica');
+  let audio = null;
+  if (CONFIG.musica) {
+    audio = new Audio(CONFIG.musica);
+    audio.loop = true;
+    audio.volume = 0.6;
+    audio.preload = 'auto';
+    audio.addEventListener('canplaythrough', () => { btnMusica.hidden = false; }, { once: true });
+  }
+  btnMusica.addEventListener('click', () => {
+    if (!audio) return;
+    if (audio.paused) { audio.play().catch(() => {}); btnMusica.classList.remove('apagada'); }
+    else { audio.pause(); btnMusica.classList.add('apagada'); }
+  });
+
+  /* ===========================================================
+     Abrir
+     =========================================================== */
+  $('btn-abrir').addEventListener('click', () => {
+    if (abierto) return;
+    abierto = true;
+    $('intro').classList.add('oculto');
+    document.body.classList.add('abierto');
+    zoomBaseObjetivo = 1;
+    inercia = reducirMovimiento ? 0 : 2.6;
+    if (audio) audio.play().catch(() => {});
+    setTimeout(() => {
+      siguienteFrase();
+      setInterval(siguienteFrase, 5400);
+    }, 1800);
+  });
+})();
+</script>
+</body>
+</html>
